@@ -8,8 +8,20 @@ __copyright__ = "Copyright (C) 2017 Sven Lohrmann - Released under terms of the 
 import octoprint.plugin
 
 
-class WebcamTabPlugin(octoprint.plugin.AssetPlugin,
+class WebcamTabPlugin(octoprint.plugin.SettingsPlugin,
+                      octoprint.plugin.AssetPlugin,
                       octoprint.plugin.TemplatePlugin):
+
+    def get_settings_defaults(self):
+        return dict(
+            keycontrolEnabled = True,
+        )
+
+	def on_settings_save(self, data):
+		s = self._settings
+		if "keycontrolEnabled" in data.keys():
+			s.setBoolean(["keycontrolEnabled"], data["keycontrolEnabled"])
+		s.save()
 
     # AssetPlugin mixin
 
@@ -23,7 +35,8 @@ class WebcamTabPlugin(octoprint.plugin.AssetPlugin,
 
     def get_template_configs(self):
         return [
-            dict(type="tab", name="Webcam", template="webcam_tab.jinja2")
+            dict(type="tab", name="Webcam", template="webcam_tab.jinja2", custom_bindings=True),
+            dict(type="settings", name="Webcam Tab", template="webcamtab_settings.jinja2", custom_bindings=True)
 		]
 
     # Softwareupdate hook
@@ -36,12 +49,12 @@ class WebcamTabPlugin(octoprint.plugin.AssetPlugin,
 
                 # version check: github repository
                 type="github_release",
-                user="malnvenshorn",
+                user="breadbakerman",
                 repo="OctoPrint-WebcamTab",
                 current=self._plugin_version,
 
                 # update method: pip
-                pip="https://github.com/malnvenshorn/OctoPrint-WebcamTab/archive/{target_version}.zip"
+                pip="https://github.com/breadbakerman/OctoPrint-WebcamTab/archive/{target_version}.zip"
             )
         )
 
