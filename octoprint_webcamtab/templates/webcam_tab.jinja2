@@ -13,10 +13,25 @@
                 <p data-bind="visible: loginState.isUser"><small>{{ _('Currently configured stream URL') }}: <a target="_blank" rel="noreferrer" data-bind="attr: {href: settings.webcam_streamUrl}, text: settings.webcam_streamUrl"></a></small></p>
             </div>
         </div>
+        <div class="webcam_recording" data-bind="visible: status() == 'recording'"><i class="fa fa-circle text-error"></i>&nbsp;REC</div>
         <div class="webcam_rotator" data-bind="css: { webcam_rotated: settings.webcam_rotate90(), webcam_unrotated: !settings.webcam_rotate90() }">
             <div class="webcam_fixed_ratio" data-bind="css: webcamRatioClass">
                 <div class="webcam_fixed_ratio_inner">
                     <img class="webcam_image" data-bind="css: { flipH: settings.webcam_flipH(), flipV: settings.webcam_flipV() }, event: { load: onWebcamLoaded, error: onWebcamErrored }, visible: !webcamError()">
+                </div>
+            </div>
+        </div>
+        <div class="keycontrol_overlay" data-bind="visible: showKeycontrolHelp">
+            <div>
+                <div class="keycontrol_overlay_column">
+                    <kbd>&rarr;</kbd> / <kbd>&larr;</kbd>: {{ _("X Axis") }} +/-<br>
+                    <kbd>&uarr;</kbd> / <kbd>&darr;</kbd>: {{ _("Y Axis") }} +/-<br>
+                    <kbd>W</kbd>, <kbd>{{ _("Page&uarr;") }}</kbd> / <kbd>S</kbd>, <kbd>{{ _("Page&darr;") }}</kbd>: {{ _("Z Axis") }} +/-
+                </div>
+                <div class="keycontrol_overlay_column">
+                    <kbd>Home</kbd>: {{ _("Home X/Y") }}<br>
+                    <kbd>End</kbd>: {{ _("Home Z") }}<br>
+                    <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd>, <kbd>4</kbd>: {{ _("Stepsize") }} 0.1, 1, 10, 100mm
                 </div>
             </div>
         </div>
@@ -29,6 +44,6 @@
         <button type="submit" class="btn btn-recording" data-bind="visible: status() == 'recording', enable: loginState.isUser() && !isRecordStateLoading(), click: stopRecording, css: { isLoading: isRecordStateLoading(), rec: status() == 'recording' }"><i class="fa fa-stop"></i>&nbsp; {{ _('Aufnahme') }}</button>
         <button type="submit" class="btn" data-bind="enable: loginState.isUser() && !isSnapshotLoading(), click: takeSnapshot, css: { isLoading: isSnapshotLoading() }"><i class="fa fa-camera"></i>&nbsp; {{ _('Standbild') }}</button>
         <button type="submit" class="btn hidden" data-bind="enable: loginState.isUser(), click: reloadStream" title="{{ _('Aktualisieren') }}"><i class="fa fa-refresh"></i></button>
-        <button type="submit" class="btn" data-bind="enable: loginState.isUser(), click: toggleKeyboard, css: { 'btn-primary': isKeycontrolEnabled() }" title="{{ _('Tastatursteuerung') }}"><i class="fa fa-arrows"></i></button>
+        <button type="submit" class="btn btn-keycontrol" data-bind="enable: loginState.isUser() && isKeycontrolPossible(), click: toggleKeyboard, css: { 'btn-primary': isKeycontrolEnabled() }" title="{{ _('Tastatursteuerung') }}"><i class="fa fa-arrows"></i></button>
     </div>
 </div>

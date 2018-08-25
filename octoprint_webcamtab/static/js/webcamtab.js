@@ -26,12 +26,17 @@ $(function() {
         self.showPlayStateTimeout = null;
         self.showRecordStateTimeout = null;
 
+        self.isKeycontrolPossible = ko.pureComputed(function () {
+            return self.control.settings.feature_keyboardControl() && self.control.isOperational() && !self.control.isPrinting() && self.loginState.isUser() && !$.browser.mobile;
+        });
         self.isKeycontrolActive = ko.observable(undefined);
         self.isKeycontrolEnabled = ko.observable(undefined);
 
         self.webcamDisableTimeout = undefined;
         self.webcamLoaded = ko.observable(false);
         self.webcamError = ko.observable(false);
+        
+        self.showKeycontrolHelp = ko.observable(undefined);
 
         self.onTabChange = function (current, previous) {
             if (current == "#tab_plugin_webcamtab") {
@@ -49,6 +54,29 @@ $(function() {
             } else {
                 self._disableWebcam();
             }
+        };
+
+        self.onAfterBinding = function() {
+            var tab = $('#tab_plugin_webcamtab .webcamtab_container');
+            var webcam = $('#webcam_container');
+            if (webcam) {
+                webcam.next().remove();
+                webcam.remove();
+                /*
+                var hint = webcam.next();
+                tab.append(webcam.detach());
+                if (hint && hint.attr('data-bind') === 'visible: keycontrolPossible') {
+                    tab.append(hint.detach());
+                }
+                */
+            }
+
+            $('<li id="navbar_recording" title="Webcam aktiviert"><a href="#tab_plugin_webcamtab"><i class="fa"></i></a></li>').insertBefore('#navbar_plugin_psucontrol');
+
+            self.showKeycontrolHelp(false);
+            self.isKeycontrolEnabled(localStorage.getItem('webcamtab.keycontrolEnabled') != 'false');
+            
+            $('#tab_plugin_webcamtab .btn.btn-keycontrol').on('mouseover mouseout click', self.toggleKeycontrolHelp);
         };
 
         self._disableWebcam = function() {
@@ -103,29 +131,6 @@ $(function() {
             }
         });
 
-        self.onAfterBinding = function() {
-            var tab = $('#tab_plugin_webcamtab .webcamtab_container');
-            var webcam = false; //$('#webcam_container');
-            if (webcam) {
-                var hint = webcam.next();
-                tab.append(webcam.detach());
-                if (hint && hint.attr('data-bind') === 'visible: keycontrolPossible') {
-                    tab.append(hint.detach());
-                }
-            }
-
-            $('<li id="navbar_recording" title="Webcam aktiviert"><a href="#tab_plugin_webcamtab"><i class="fa"></i></a></li>').insertBefore('#navbar_plugin_psucontrol');
-
-            self.isKeycontrolActive(true);
-
-            self.isKeycontrolEnabled(self.settings.settings.plugins.webcamtab.keycontrolEnabled());
-            $(window).on('keydown', function () {
-                if (self.isKeycontrolActive() && self.isKeycontrolEnabled()) {
-                    console.log('KEYDOWN');
-                }
-            });
-        };
-
         self.onWebcamLoaded = function() {
             if (self.webcamLoaded()) return;
 
@@ -146,8 +151,12 @@ $(function() {
         
         self.toggleKeyboard = function () {
             self.isKeycontrolEnabled(!self.isKeycontrolEnabled());
-            self.settings.settings.plugins.webcamtab.keycontrolEnabled(self.isKeycontrolEnabled());
+            localStorage.setItem('webcamtab.keycontrolEnabled', self.isKeycontrolEnabled());
         };
+
+        self.toggleKeycontrolHelp = function (event) {
+            self.showKeycontrolHelp(event.type == 'mouseout' ? false : self.isKeycontrolEnabled());
+        }
 
         self.updateStatus = function (callback) {
             $.ajax('//'+location.hostname+'/webcam/status.php').done(function (data) {
@@ -186,7 +195,6 @@ $(function() {
         };
 
         self.refreshPlayState = function (data) {
-            self.updateStatus();
             self.reloadStream();
             self.showPlayStateTimeout = setTimeout(function () {
                 self.isPlayStateLoading(false);
@@ -229,7 +237,94 @@ $(function() {
             self.showSnapshotTimeout = setTimeout(function () {
                 self.showSnapshot(false);
             }, 5000);
-        }
+        };
+
+        $(window).on('keydown', function () {
+            if (self.isKeycontrolActive() && self.isKeycontrolEnabled() && self.isKeycontrolPossible()) {
+                if (!self.control.settings.feature_keyboardControl()) return;
+
+                var button = undefined;
+                var visualizeClick = true;
+
+                switch (event.which) {
+                    case 37: // left arrow key
+                        // X-
+                        button = $("#control-xdec");
+                        break;
+                    case 38: // up arrow key
+                        // Y+
+                        button = $("#control-yinc");
+                        break;
+                    case 39: // right arrow key
+                        // X+
+                        button = $("#control-xinc");
+                        break;
+                    case 40: // down arrow key
+                        // Y-
+                        button = $("#control-ydec");
+                        break;
+                    case 49: // number 1
+                    case 97: // numpad 1
+                        // Distance 0.1
+                        button = $("#control-distance01");
+                        visualizeClick = false;
+                        break;
+                    case 50: // number 2
+                    case 98: // numpad 2
+                        // Distance 1
+                        button = $("#control-distance1");
+                        visualizeClick = false;
+                        break;
+                    case 51: // number 3
+                    case 99: // numpad 3
+                        // Distance 10
+                        button = $("#control-distance10");
+                        visualizeClick = false;
+                        break;
+                    case 52: // number 4
+                    case 100: // numpad 4
+                        // Distance 100
+                        button = $("#control-distance100");
+                        visualizeClick = false;
+                        break;
+                    case 33: // page up key
+                    case 87: // w key
+                        // z lift up
+                        button = $("#control-zinc");
+                        break;
+                    case 34: // page down key
+                    case 83: // s key
+                        // z lift down
+                        button = $("#control-zdec");
+                        break;
+                    case 36: // home key
+                        // xy home
+                        button = $("#control-xyhome");
+                        break;
+                    case 35: // end key
+                        // z home
+                        button = $("#control-zhome");
+                        break;
+//                    default:
+//                        event.preventDefault();
+//                        return false;
+                }
+
+                if (button !== undefined) {
+                //if (button === undefined) {
+                //    return false;
+                //} else {
+                    event.preventDefault();
+                    if (visualizeClick) {
+                        button.addClass("active");
+                        setTimeout(function () {
+                            button.removeClass("active");
+                        }, 150);
+                    }
+                    button.click();
+                }
+            }
+        });
     };
 
     OCTOPRINT_VIEWMODELS.push({
